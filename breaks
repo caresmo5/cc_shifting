@@ -4,29 +4,6 @@ from datetime import datetime, timedelta, time
 import random
 
 
-# El resultado es un Excel que creo que será fácil de leer para Power BI y fácil para que los TL hagan cambios a mano.
-# La idea sería que un TL entre al Excel, inserte una tabla, filtre por el agente que quiera modificar, cambie las pausas, desfiltre y guarde.
-
-# FALTA:
-#   - Casos especiales (ya hay un apartado para ello)
-#   - Probar si obtiene una accesibilidad mejor que la plantilla del Excel
-#   - Hacer una previsión con los horarios desde el 1 de diciembre hasta el 22 de enero (antes no, que el forecast era muy malo)
-#   - En el Excel final Previsión hay que quitar las columnas de los días, que no sirven para nada
-#   - IMPORTANTE: al principio cuando lee el planning está cogiendo a 63 agentes en lugar de 66, no sé por qué
-
-# INTENTAR:
-#   Podría probar a tener en cuenta la productividad media de cada agente (si lo viera viable, por día de la semana y por horas).
-#   A lo mejor sería hacer una tabla con las siguientes columnas: País, Día, Hora, Agente, Productividad.
-#   Incluso podría sacar las horas cada 10min y, como sé quién está y quien no a ese detalle, puedo sacar los agentes que hay cada 10 min.
-#   Como sé los agentes concretos, sé las contestadas concretas cada 10min (productividad por hora / 6). Sumando todo el día, lo tengo.
-#   Para esto podría repetir todas las horas cada 10min tantas veces como agentes haya. Luego poner al lado los agentes repetidos.
-#   Luego una columna de 1s. Como sé en qué 10min no está cada agente, hago: si es este agente y esta hora (en la que está descansando),
-#   pon un 0. Entonces elimino los 0s de la columna. Para cada agente, sustituyo los 1s por su respectiva productividad.
-#   OJO, así lo que estoy diciendo es que cada agente está trabajando de 7h a 22h excepto en sus pausas. Tendría que poner 1s solo en las
-#   horas en las que trabajan. Esto ya para más adelante.
-
-
-
 planning = pd.read_excel('U:\Turnos\Horarios y pausas\Definitivo\Planning Internacional 2 (prueba de Carlos España para Python).xlsx', sheet_name= 'Hoja1')
 planning.iloc[14,9:] = planning.iloc[11,9:]
 names = planning.iloc[14]
