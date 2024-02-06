@@ -3,7 +3,6 @@ import numpy as np
 from datetime import datetime, timedelta, time
 import random
 
-
 planning = pd.read_excel('U:\Turnos\Horarios y pausas\Definitivo\Planning Internacional 2 (prueba de Carlos España para Python).xlsx', sheet_name= 'Hoja1')
 planning.iloc[14,9:] = planning.iloc[11,9:]
 names = planning.iloc[14]
@@ -58,9 +57,6 @@ def pausas(dia,planning,definitivo,prevision):
     planning = planning[planning[dia] != '0']
     planning = planning.sort_values(by=dia)
 
-
-    # Elimino los *
-    planning[dia] = planning[dia].str.replace('*','')
 
     preferencias = pd.read_excel('U:\Turnos\Horarios y pausas\Definitivo\Preferencias.xlsx')
     preferencias.rename(columns={'Nombre':'Agente','Agente':'Nombre'}, inplace=True)
@@ -2495,7 +2491,10 @@ def pausas(dia,planning,definitivo,prevision):
             planning.loc[i,'Break1'] = (datetime.combine(datetime.today(), break1) + timedelta(minutes=random.choice([0,10,20,30,40]))).time()
             planning.loc[i,'Break2'] = (datetime.combine(datetime.today(), break2) + timedelta(minutes=random.choice([0,10,20,30,40]))).time()
 
-
+    # Creo columnas Lunch2 y Lunch3
+    
+    planning = planning.assign(Lunch2 = np.zeros((len(planning['Nombre']),1)))
+    planning = planning.assign(Lunch3 = np.zeros((len(planning['Nombre']),1)))
 
     # Breaks M7
     for i in range(len(planning['Nombre'])):
@@ -2509,6 +2508,7 @@ def pausas(dia,planning,definitivo,prevision):
                 planning.loc[i,'Break2'] = time(12,20,00)
             if planning.loc[i,'Break1'] == time(9,40,00):
                 planning.loc[i,'Break2'] = time(12,30,00)
+
 
         if planning.loc[i,dia] == 'M7' and planning.loc[i,'Preferencia'] == 2:
             lunch = time(10,40,00)
@@ -2683,22 +2683,21 @@ def pausas(dia,planning,definitivo,prevision):
 
 
         # Tamara Nietlispach
+                    # Tamara tiene un día a la semana que hace 6h y se indica con un asterisco. No hace pausa de 30min
 
     nombre = 'NIETLISPACH, TAMARA'
     if nombre in planning['Nombre'].values:
-        lunch_viejo = planning.loc[planning['Nombre'] == 'NIETLISPACH, TAMARA', 'Lunch'].values[0]
-        posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
-        agentes[posicion] = agentes[posicion] + 1
-
-                # De una tabla con los turnos especiales, busco la hora que tiene que parar y resto un agente a esa hora en el array agentes
-        
-        lunch_esp3 = especiales.loc[especiales['Agente'] == 'NIETLISPACH, TAMARA']
         turno = planning.loc[planning['Nombre'] == 'NIETLISPACH, TAMARA', dia].values[0]
+        lunch_esp3 = especiales.loc[especiales['Agente'] == 'NIETLISPACH, TAMARA']
         lunch_esp3 = lunch_esp3.loc[lunch_esp3['Turno'] == turno, 'Lunch'].values[0]
-        posicion = orden.loc[orden['Hora'] == lunch_esp3, 'Numero'].values[0]
-        agentes[posicion] = agentes[posicion] - 1
-        
-                # Actualizo los arrays contestadas, accesibilidad, accesibilidad_dia y acc y actualizo las columnas Subturno y Hora del dataframe planning
+        if '*' not in turno:
+            lunch_viejo = planning.loc[planning['Nombre'] == 'NIETLISPACH, TAMARA', 'Lunch'].values[0]
+            posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] + 1
+            posicion = orden.loc[orden['Hora'] == lunch_esp3, 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] - 1
+            
+                # Actualizo los arrays contestadas, accesibilidad, accesibilidad_dia y acc
 
         contestadas = agentes * productividad
         contestadas = np.minimum(contestadas,forecast) * tope_accesibilidad
@@ -2707,9 +2706,10 @@ def pausas(dia,planning,definitivo,prevision):
         acc = pd.DataFrame(np.random.randn(30,2), columns=['Hora','Accesibilidad'])
         acc.iloc[:,0] = horas
         acc.iloc[:,1] = accesibilidad
-        planning.loc[planning['Nombre'] == 'NIETLISPACH, TAMARA', 'Lunch'] = lunch_esp3
 
-                # Actualizo breaks
+                # Actualizo breaks y lunch
+        
+        planning.loc[planning['Nombre'] == 'NIETLISPACH, TAMARA', 'Lunch'] = lunch_esp3
         
         break1_esp = especiales.loc[especiales['Agente'] == 'NIETLISPACH, TAMARA']
         break1_esp = break1_esp.loc[break1_esp['Turno'] == turno, 'Break 1'].values[0]
@@ -2719,32 +2719,48 @@ def pausas(dia,planning,definitivo,prevision):
         break2_esp = break2_esp.loc[break2_esp['Turno'] == turno, 'Break 2'].values[0]
         planning.loc[planning['Nombre'] == 'NIETLISPACH, TAMARA', 'Break2'] = break2_esp
 
-                # Resto la hora que no está
+                # Resto las dos horas que no está cuando tiene un * en el turno
         
-        if turno == 'M7':
-            agentes[15] -= 1
-            agentes[16] -= 1
-        elif turno == 'M8':
-            agentes[17] -= 1
-            agentes[18] -= 1
-        elif turno == 'M9':
-            agentes[19] -= 1
-            agentes[20] -= 1
-        elif turno == 'M9:30':
-            agentes[20] -= 1
-            agentes[21] -= 1
-        elif turno == 'M10':
-            agentes[21] -= 1
-            agentes[22] -= 1
-        elif turno == 'M12':
-            agentes[25] -= 1
-            agentes[26] -= 1
-        elif turno == 'T13':
-            agentes[27] -= 1
-            agentes[28] -= 1
-        elif turno == 'T14':
+        if turno == 'M7*':
             agentes[13] -= 1
             agentes[14] -= 1
+            agentes[15] -= 1
+            agentes[16] -= 1
+        elif turno == 'M8*':
+            agentes[15] -= 1
+            agentes[16] -= 1
+            agentes[17] -= 1
+            agentes[18] -= 1
+        elif turno == 'M9*':
+            agentes[17] -= 1
+            agentes[18] -= 1
+            agentes[19] -= 1
+            agentes[20] -= 1
+        elif turno == 'M9:30*':
+            agentes[18] -= 1
+            agentes[19] -= 1
+            agentes[20] -= 1
+            agentes[21] -= 1
+        elif turno == 'M10*':
+            agentes[19] -= 1
+            agentes[20] -= 1
+            agentes[21] -= 1
+            agentes[22] -= 1
+        elif turno == 'M12*':
+            agentes[23] -= 1
+            agentes[24] -= 1
+            agentes[25] -= 1
+            agentes[26] -= 1
+        elif turno == 'T13*':
+            agentes[25] -= 1
+            agentes[26] -= 1
+            agentes[27] -= 1
+            agentes[28] -= 1
+        elif turno == 'T14*' or turno == '*T14':
+            agentes[14] -= 1
+            agentes[15] -= 1
+            agentes[16] -= 1
+            agentes[17] -= 1
 
         # Katharina Winkel
 
@@ -2841,12 +2857,9 @@ def pausas(dia,planning,definitivo,prevision):
             planning.loc[planning['Nombre'] == 'ALVARADO ROMAN, ROMEL GINO', 'Break2'] = time(14,0,0)
     
     # Pongo Lunch+ y Lunch++
-    planning = planning.assign(Lunch2 = np.zeros((len(planning['Nombre']),1)))
-    planning = planning.assign(Lunch3 = np.zeros((len(planning['Nombre']),1)))
-
-
+    
     for i in range(len(planning['Nombre'])):
-        if planning.loc[i, 'Lunch'] != 0:
+        if planning.loc[i, 'Lunch'] != 0 and planning.loc[i,'Subturno'] != 'M7.0.2' and planning.loc[i,'Subturno'] != 'T14.0.2':
             planning.loc[i, 'Lunch2'] = (datetime.combine(datetime.today(), planning.loc[i, 'Lunch']) + timedelta(minutes=10)).time()
             planning.loc[i, 'Lunch3'] = (datetime.combine(datetime.today(), planning.loc[i, 'Lunch']) + timedelta(minutes=20)).time()
 
@@ -2894,7 +2907,7 @@ diferencia = diferencia.days + 1
 for i in range(diferencia):
     definitivo, prevision = pausas(inicio + timedelta(days=i),planning,definitivo,prevision)
 
-columnas_a_concatenar = definitivo.iloc[:, 11:14]
+columnas_a_concatenar = definitivo.iloc[:, 11:]
 
 definitivo['Turnos'] = columnas_a_concatenar.apply(lambda row: ' '.join(str(cell) for cell in row if pd.notna(cell)), axis=1)
 definitivo.drop(definitivo.columns[11:-1],axis=1,inplace=True)
