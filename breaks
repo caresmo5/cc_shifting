@@ -4,6 +4,18 @@ from datetime import datetime, timedelta, time
 import random
 
 
+# INTENTAR:
+#   Podría probar a tener en cuenta la productividad media de cada agente (si lo viera viable, por día de la semana y por horas).
+#   A lo mejor sería hacer una tabla con las siguientes columnas: País, Día, Hora, Agente, Productividad.
+#   Incluso podría sacar las horas cada 10min y, como sé quién está y quien no a ese detalle, puedo sacar los agentes que hay cada 10 min.
+#   Como sé los agentes concretos, sé las contestadas concretas cada 10min (productividad por hora / 6). Sumando todo el día, lo tengo.
+#   Para esto podría repetir todas las horas cada 10min tantas veces como agentes haya. Luego poner al lado los agentes repetidos.
+#   Luego una columna de 1s. Como sé en qué 10min no está cada agente, hago: si es este agente y esta hora (en la que está descansando),
+#   pon un 0. Entonces elimino los 0s de la columna. Para cada agente, sustituyo los 1s por su respectiva productividad.
+#   OJO, así lo que estoy diciendo es que cada agente está trabajando de 7h a 22h excepto en sus pausas. Tendría que poner 1s solo en las
+#   horas en las que trabajan. Esto ya para más adelante.
+
+
 
 planning = pd.read_excel('U:\Turnos\Horarios y pausas\Definitivo\Planning Internacional 2 (prueba de Carlos España para Python).xlsx', sheet_name= 'Hoja1')
 planning.iloc[14,9:] = planning.iloc[11,9:]
@@ -86,7 +98,7 @@ def pausas(dia,planning,definitivo,prevision):
     frecuencia[5] = planning[dia].value_counts().get('P9:30',0)
     frecuencia[6] = planning[dia].value_counts().get('M12',0) + planning[dia].value_counts().get('M12*',0)
     frecuencia[7] = planning[dia].value_counts().get('T13',0) + planning[dia].value_counts().get('T13*',0)
-    frecuencia[8] = planning[dia].value_counts().get('T14',0) + planning[dia].value_counts().get('T14*',0)
+    frecuencia[8] = planning[dia].value_counts().get('T14',0) + planning[dia].value_counts().get('T14*',0) + planning[dia].value_counts().get('*T14',0)
     frecuencia[9] = planning[dia].value_counts().get('M9:30',0) + planning[dia].value_counts().get('M9:30*',0)
     contador = np.array(frecuencia)
 
@@ -2115,7 +2127,7 @@ def pausas(dia,planning,definitivo,prevision):
             else:
                 print("No rows found with the specified condition.")
 
-        if planning.iloc[i,2] == 'T14' and planning.iloc[i,5] == "10'-30'-10'" and (planning.iloc[i,0] == 'RP/SP/CP' or planning.iloc[i,0] == ' RP/SP/CP' or planning.iloc[i,0] == '  RP/SP/CP' or planning.iloc[i,0] == 'RP/SP/CP ' or planning.iloc[i,0] == 'RP/SP/CP  ' or planning.iloc[i,0] == 'RP/SP/CP/cias' or planning.iloc[i,0] == 'RP/SP/CP/promos'):
+        if (planning.iloc[i,2] == 'T14' or planning.iloc[i,2] == 'T14*' or planning.iloc[i,2] == '*T14') and planning.iloc[i,5] == "10'-30'-10'" and (planning.iloc[i,0] == 'RP/SP/CP' or planning.iloc[i,0] == ' RP/SP/CP' or planning.iloc[i,0] == '  RP/SP/CP' or planning.iloc[i,0] == 'RP/SP/CP ' or planning.iloc[i,0] == 'RP/SP/CP  ' or planning.iloc[i,0] == 'RP/SP/CP/cias' or planning.iloc[i,0] == 'RP/SP/CP/promos'):
             cantidad = RPSPCP[dia].value_counts().get('T14',0)
             horas_dispo = pausas.loc[[33],['T14.1','T14.2','T14.3']]
             horas_dispo.index = ['Hora']
@@ -2556,10 +2568,6 @@ def pausas(dia,planning,definitivo,prevision):
             if planning.loc[i,'Subturno'] == j:
                 planning.loc[i,'Break2'] = pausas.loc[34,j]
 
-    print(dia)
-    print(planning)
-    
-
     # Casos especiales
                 
     especiales = pd.read_excel('U:\Turnos\Horarios y pausas\Definitivo\Turnos especiales.xlsx', sheet_name= 'Hoja1')
@@ -2639,7 +2647,7 @@ def pausas(dia,planning,definitivo,prevision):
 
         turno = planning.loc[planning['Nombre'] == 'PAUSTIAN-VOSS,RITA BIRKE ', dia].values[0]
 
-        if turno != 'P9:30' and turno != 'P9:00' and dia.weekday() != 5 and dia.weekday() != 6:
+        if turno != 'P9:30' and turno != 'P9:00' and dia.weekday() != 5 and dia.weekday() != 6 and turno != 'M7' and turno != 'T14':
             lunch_viejo = planning.loc[planning['Nombre'] == 'PAUSTIAN-VOSS,RITA BIRKE ', 'Lunch'].values[0]
             posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
             agentes[posicion] = agentes[posicion] + 1
@@ -2868,9 +2876,6 @@ def pausas(dia,planning,definitivo,prevision):
         turno = planning.loc[planning['Nombre'] == nombre, dia].values[0]
 
         if turno == 'M7':
-            lunch_viejo = planning.loc[planning['Nombre'] == nombre, 'Lunch'].values[0]
-            posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
-            agentes[posicion] = agentes[posicion] + 1
             posicion = orden.loc[orden['Hora'] == time(10,30,0), 'Numero'].values[0]
             agentes[posicion] = agentes[posicion] - 1
 
@@ -2894,8 +2899,6 @@ def pausas(dia,planning,definitivo,prevision):
 
 
         if turno == 'T14':
-            lunch_viejo = planning.loc[planning['Nombre'] == nombre, 'Lunch'].values[0]
-            posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
             agentes[posicion] = agentes[posicion] + 1
             posicion = orden.loc[orden['Hora'] == time(18,0,0), 'Numero'].values[0]
             agentes[posicion] = agentes[posicion] - 1
@@ -3053,6 +3056,10 @@ def pausas(dia,planning,definitivo,prevision):
     auxprevision['Recibidas'] = forecast
 
     prevision = pd.concat([prevision,auxprevision], ignore_index = True)
+
+    print(dia)
+    print(planning)
+
 
     return definitivo, prevision
 
