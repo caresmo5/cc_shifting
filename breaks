@@ -3,6 +3,20 @@ import numpy as np
 from datetime import datetime, timedelta, time
 import random
 
+
+# INTENTAR:
+#   Podría probar a tener en cuenta la productividad media de cada agente (si lo viera viable, por día de la semana y por horas).
+#   A lo mejor sería hacer una tabla con las siguientes columnas: País, Día, Hora, Agente, Productividad.
+#   Incluso podría sacar las horas cada 10min y, como sé quién está y quien no a ese detalle, puedo sacar los agentes que hay cada 10 min.
+#   Como sé los agentes concretos, sé las contestadas concretas cada 10min (productividad por hora / 6). Sumando todo el día, lo tengo.
+#   Para esto podría repetir todas las horas cada 10min tantas veces como agentes haya. Luego poner al lado los agentes repetidos.
+#   Luego una columna de 1s. Como sé en qué 10min no está cada agente, hago: si es este agente y esta hora (en la que está descansando),
+#   pon un 0. Entonces elimino los 0s de la columna. Para cada agente, sustituyo los 1s por su respectiva productividad.
+#   OJO, así lo que estoy diciendo es que cada agente está trabajando de 7h a 22h excepto en sus pausas. Tendría que poner 1s solo en las
+#   horas en las que trabajan. Esto ya para más adelante.
+
+
+
 planning = pd.read_excel('U:\Turnos\Horarios y pausas\Definitivo\Planning Internacional 2 (prueba de Carlos España para Python).xlsx', sheet_name= 'Hoja1')
 planning.iloc[14,9:] = planning.iloc[11,9:]
 names = planning.iloc[14]
@@ -2840,6 +2854,8 @@ def pausas(dia,planning,definitivo,prevision):
             lunch_viejo = planning.loc[planning['Nombre'] == 'ALVARADO ROMAN, ROMEL GINO', 'Lunch'].values[0]
             posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
             agentes[posicion] = agentes[posicion] + 1
+            posicion = orden.loc[orden['Hora'] == time(12,0,0), 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] - 1
 
                 # Actualizo los arrays contestadas, accesibilidad, accesibilidad_dia y acc y actualizo las columnas Subturno y Hora del dataframe planning
 
@@ -2855,6 +2871,160 @@ def pausas(dia,planning,definitivo,prevision):
                 # Actualizo breaks
             planning.loc[planning['Nombre'] == 'ALVARADO ROMAN, ROMEL GINO', 'Break1'] = time(9,30,0)
             planning.loc[planning['Nombre'] == 'ALVARADO ROMAN, ROMEL GINO', 'Break2'] = time(14,0,0)
+
+        # Manuela Martínez (20' a las 10:30h en M7, 20' a las 18:00h en T14, lunch entre las 13:30 y las 14:30 en otro turno)
+            
+    nombre = 'MARTINEZ CANO, MANUELA'
+    if nombre in planning['Nombre'].values:
+
+        turno = planning.loc[planning['Nombre'] == nombre, dia].values[0]
+
+        if turno == 'M7':
+            lunch_viejo = planning.loc[planning['Nombre'] == nombre, 'Lunch'].values[0]
+            posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] + 1
+            posicion = orden.loc[orden['Hora'] == time(10,30,0), 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] - 1
+
+                # Actualizo los arrays contestadas, accesibilidad, accesibilidad_dia y acc y actualizo las columnas Subturno y Hora del dataframe planning
+
+            contestadas = agentes * productividad
+            contestadas = np.minimum(contestadas,forecast) * tope_accesibilidad
+            accesibilidad = np.nan_to_num(np.divide(contestadas, forecast, out=np.zeros_like(contestadas), where=(forecast != 0)) * 100)
+            accesibilidad_dia = np.sum(contestadas) / np.sum(forecast) * 100
+            acc = pd.DataFrame(np.random.randn(30,2), columns=['Hora','Accesibilidad'])
+            acc.iloc[:,0] = horas
+            acc.iloc[:,1] = accesibilidad
+            planning.loc[planning['Nombre'] == nombre, 'Lunch'] = time(10, 30, 0)
+            planning.loc[planning['Nombre'] == nombre, 'Lunch2'] = time(10, 40, 0)
+            planning.loc[planning['Nombre'] == nombre, 'Lunch3'] = time(0,0,0)
+            
+
+                # Actualizo breaks
+            planning.loc[planning['Nombre'] == nombre, 'Break1'] = time(0,0,0)
+            planning.loc[planning['Nombre'] == nombre, 'Break2'] = time(0,0,0)
+
+
+        if turno == 'T14':
+            lunch_viejo = planning.loc[planning['Nombre'] == nombre, 'Lunch'].values[0]
+            posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] + 1
+            posicion = orden.loc[orden['Hora'] == time(18,0,0), 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] - 1
+
+                # Actualizo los arrays contestadas, accesibilidad, accesibilidad_dia y acc y actualizo las columnas Subturno y Hora del dataframe planning
+
+            contestadas = agentes * productividad
+            contestadas = np.minimum(contestadas,forecast) * tope_accesibilidad
+            accesibilidad = np.nan_to_num(np.divide(contestadas, forecast, out=np.zeros_like(contestadas), where=(forecast != 0)) * 100)
+            accesibilidad_dia = np.sum(contestadas) / np.sum(forecast) * 100
+            acc = pd.DataFrame(np.random.randn(30,2), columns=['Hora','Accesibilidad'])
+            acc.iloc[:,0] = horas
+            acc.iloc[:,1] = accesibilidad
+            planning.loc[planning['Nombre'] == nombre, 'Lunch'] = time(18, 0, 0)
+            planning.loc[planning['Nombre'] == nombre, 'Lunch2'] = time(18, 10, 0)
+            planning.loc[planning['Nombre'] == nombre, 'Lunch3'] = time(0,0,0)
+            
+
+                # Actualizo breaks
+            planning.loc[planning['Nombre'] == nombre, 'Break1'] = time(0,0,0)
+            planning.loc[planning['Nombre'] == nombre, 'Break2'] = time(0,0,0)
+
+        if turno == 'M8':
+            lunch_viejo = planning.loc[planning['Nombre'] == nombre, 'Lunch'].values[0]
+            posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] + 1
+            posicion = orden.loc[orden['Hora'] == time(13,30,0), 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] - 1
+
+                # Actualizo los arrays contestadas, accesibilidad, accesibilidad_dia y acc y actualizo las columnas Subturno y Hora del dataframe planning
+
+            contestadas = agentes * productividad
+            contestadas = np.minimum(contestadas,forecast) * tope_accesibilidad
+            accesibilidad = np.nan_to_num(np.divide(contestadas, forecast, out=np.zeros_like(contestadas), where=(forecast != 0)) * 100)
+            accesibilidad_dia = np.sum(contestadas) / np.sum(forecast) * 100
+            acc = pd.DataFrame(np.random.randn(30,2), columns=['Hora','Accesibilidad'])
+            acc.iloc[:,0] = horas
+            acc.iloc[:,1] = accesibilidad
+            planning.loc[planning['Nombre'] == nombre, 'Lunch'] = time(13, 30, 0)
+            
+
+                # Actualizo breaks
+            planning.loc[planning['Nombre'] == nombre, 'Break1'] = time(10,20,0)
+            planning.loc[planning['Nombre'] == nombre, 'Break2'] = time(15,20,0)
+
+
+        if turno == 'M9':
+            lunch_viejo = planning.loc[planning['Nombre'] == nombre, 'Lunch'].values[0]
+            posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] + 1
+            posicion = orden.loc[orden['Hora'] == time(13,30,0), 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] - 1
+
+                # Actualizo los arrays contestadas, accesibilidad, accesibilidad_dia y acc y actualizo las columnas Subturno y Hora del dataframe planning
+
+            contestadas = agentes * productividad
+            contestadas = np.minimum(contestadas,forecast) * tope_accesibilidad
+            accesibilidad = np.nan_to_num(np.divide(contestadas, forecast, out=np.zeros_like(contestadas), where=(forecast != 0)) * 100)
+            accesibilidad_dia = np.sum(contestadas) / np.sum(forecast) * 100
+            acc = pd.DataFrame(np.random.randn(30,2), columns=['Hora','Accesibilidad'])
+            acc.iloc[:,0] = horas
+            acc.iloc[:,1] = accesibilidad
+            planning.loc[planning['Nombre'] == nombre, 'Lunch'] = time(13, 30, 0)
+            
+
+                # Actualizo breaks
+            planning.loc[planning['Nombre'] == nombre, 'Break1'] = time(10,40,0)
+            planning.loc[planning['Nombre'] == nombre, 'Break2'] = time(16,10,0)
+
+
+        if turno == 'M12':
+            lunch_viejo = planning.loc[planning['Nombre'] == nombre, 'Lunch'].values[0]
+            posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] + 1
+            posicion = orden.loc[orden['Hora'] == time(14,0,0), 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] - 1
+
+                # Actualizo los arrays contestadas, accesibilidad, accesibilidad_dia y acc y actualizo las columnas Subturno y Hora del dataframe planning
+
+            contestadas = agentes * productividad
+            contestadas = np.minimum(contestadas,forecast) * tope_accesibilidad
+            accesibilidad = np.nan_to_num(np.divide(contestadas, forecast, out=np.zeros_like(contestadas), where=(forecast != 0)) * 100)
+            accesibilidad_dia = np.sum(contestadas) / np.sum(forecast) * 100
+            acc = pd.DataFrame(np.random.randn(30,2), columns=['Hora','Accesibilidad'])
+            acc.iloc[:,0] = horas
+            acc.iloc[:,1] = accesibilidad
+            planning.loc[planning['Nombre'] == nombre, 'Lunch'] = time(14, 0, 0)
+            
+
+                # Actualizo breaks
+            planning.loc[planning['Nombre'] == nombre, 'Break1'] = time(16,20,0)
+            planning.loc[planning['Nombre'] == nombre, 'Break2'] = time(18,40,0)
+
+        if turno == 'T13':
+            lunch_viejo = planning.loc[planning['Nombre'] == nombre, 'Lunch'].values[0]
+            posicion = orden.loc[orden['Hora'] == lunch_viejo, 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] + 1
+            posicion = orden.loc[orden['Hora'] == time(14,30,0), 'Numero'].values[0]
+            agentes[posicion] = agentes[posicion] - 1
+
+                # Actualizo los arrays contestadas, accesibilidad, accesibilidad_dia y acc y actualizo las columnas Subturno y Hora del dataframe planning
+
+            contestadas = agentes * productividad
+            contestadas = np.minimum(contestadas,forecast) * tope_accesibilidad
+            accesibilidad = np.nan_to_num(np.divide(contestadas, forecast, out=np.zeros_like(contestadas), where=(forecast != 0)) * 100)
+            accesibilidad_dia = np.sum(contestadas) / np.sum(forecast) * 100
+            acc = pd.DataFrame(np.random.randn(30,2), columns=['Hora','Accesibilidad'])
+            acc.iloc[:,0] = horas
+            acc.iloc[:,1] = accesibilidad
+            planning.loc[planning['Nombre'] == nombre, 'Lunch'] = time(14, 30, 0)
+            
+
+                # Actualizo breaks
+            planning.loc[planning['Nombre'] == nombre, 'Break1'] = time(16,50,0)
+            planning.loc[planning['Nombre'] == nombre, 'Break2'] = time(19,40,0)
+
+
     
     # Pongo Lunch+ y Lunch++
     
